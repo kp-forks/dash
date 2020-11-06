@@ -153,7 +153,7 @@ class Browser(DashPageMixin):
             """
             )
 
-            percySnapshot(browser=self.driver, name=snapshot_name, percyCSS="iframe { display: initial; }", enableJavaScript=True)
+            percySnapshot(browser=self.driver, name=snapshot_name, enableJavaScript=True)
 
             self.driver.execute_script(
                 """
@@ -170,7 +170,7 @@ class Browser(DashPageMixin):
             )
 
         else:
-            percySnapshot(browser=self.driver, name=snapshot_name, percyCSS="iframe { display: initial; }", enableJavaScript=True)
+            percySnapshot(browser=self.driver, name=snapshot_name, enableJavaScript=True)
 
     def take_snapshot(self, name):
         """Hook method to take snapshot when a selenium test fails. The
