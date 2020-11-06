@@ -4,8 +4,8 @@ import sys
 import time
 import logging
 import warnings
-import percy
 
+from percy import percySnapshot
 from selenium import webdriver
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
@@ -39,8 +39,6 @@ class Browser(DashPageMixin):
         headless=False,
         options=None,
         download_path="",
-        percy_run=True,
-        percy_finalize=True,
         percy_assets_root="",
         wait_timeout=10,
         pause=False,
@@ -54,8 +52,6 @@ class Browser(DashPageMixin):
         self._options = options
         self._download_path = download_path
         self._wait_timeout = wait_timeout
-        self._percy_finalize = percy_finalize
-        self._percy_run = percy_run
         self._pause = pause
 
         self._driver = until(self.get_webdriver, timeout=1)
@@ -66,16 +62,6 @@ class Browser(DashPageMixin):
         self._url = None
 
         self._window_idx = 0  # switch browser tabs
-
-        if self._percy_run:
-            self.percy_runner = percy.Runner(
-                loader=percy.ResourceLoader(
-                    webdriver=self.driver,
-                    base_url="/assets",
-                    root_dir=percy_assets_root,
-                )
-            )
-            self.percy_runner.initialize_build()
 
         logger.info("initialize browser with arguments")
         logger.info("  headless => %s", self._headless)
@@ -88,11 +74,6 @@ class Browser(DashPageMixin):
     def __exit__(self, exc_type, exc_val, traceback):
         try:
             self.driver.quit()
-            if self._percy_run and self._percy_finalize:
-                logger.info("percy runner finalize build now")
-                self.percy_runner.finalize_build()
-            else:
-                logger.info("percy finalize relies on CI job")
         except WebDriverException:
             logger.exception("webdriver quit was not successful")
         except percy.errors.Error:
@@ -172,7 +153,7 @@ class Browser(DashPageMixin):
             """
             )
 
-            self.percy_runner.snapshot(name=snapshot_name)
+            percySnapshot(browser=self.driver, name=snapshot_name, percyCSS="iframe { display: initial; }", enableJavaScript=True)
 
             self.driver.execute_script(
                 """
@@ -189,7 +170,7 @@ class Browser(DashPageMixin):
             )
 
         else:
-            self.percy_runner.snapshot(name=snapshot_name)
+            percySnapshot(browser=self.driver, name=snapshot_name, percyCSS="iframe { display: initial; }", enableJavaScript=True)
 
     def take_snapshot(self, name):
         """Hook method to take snapshot when a selenium test fails. The

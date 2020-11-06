@@ -324,7 +324,7 @@ jobs:
             . venv/bin/activate
             npm run setup-tests.R
             export PATH=$PATH:/home/circleci/.local/bin/
-            pytest --nopercyfinalize --junitxml=test-reports/dashr.xml dashR/tests/integration/dopsa/
+            percy exec -- pytest --junitxml=test-reports/dashr.xml dashR/tests/integration/dopsa/
       - store_artifacts:
           path: test-reports
       - store_test_results:
@@ -371,6 +371,7 @@ jobs:
           name: 🧪 Run Integration Tests
           command: |
             . venv/bin/activate
+            percy start
             npm run citest.integration
       - store_artifacts:
           path: test-reports
@@ -380,8 +381,8 @@ jobs:
           path: /tmp/dash_artifacts
       - run:
           name: 🦔 percy finalize
-          command: npx percy finalize --all
-          when: on_fail
+          command: percy stop
+          when: always
 
   test-36:
       <<: *test
