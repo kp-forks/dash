@@ -1,5 +1,6 @@
 import collections
 import re
+from textrap import dedent
 
 from .development.base_component import Component
 from .dependencies import Input, Output, State
@@ -19,41 +20,41 @@ def validate_callback(output, inputs, state):
 def validate_callback_args(args, cls):
     name = cls.__name__
     if not isinstance(args, (list, tuple)):
-        raise exceptions.IncorrectTypeException(
+        raise exceptions.IncorrectTypeException(dedent(
             """
             The {} argument `{}` must be a list or tuple of
             `dash.dependencies.{}`s.
             """.format(
                 name.lower(), str(args), name
-            )
+            ))
         )
 
     for arg in args:
         if not isinstance(arg, cls):
-            raise exceptions.IncorrectTypeException(
+            raise exceptions.IncorrectTypeException(dedent(
                 """
                 The {} argument `{}` must be of type `dash.dependencies.{}`.
                 """.format(
                     name.lower(), str(arg), name
                 )
-            )
+            ))
 
         if not isinstance(getattr(arg, "component_property", None), _strings):
-            raise exceptions.IncorrectTypeException(
+            raise exceptions.IncorrectTypeException(dedent(
                 """
                 component_property must be a string, found {!r}
                 """.format(
                     arg.component_property
                 )
-            )
+            ))
 
         if hasattr(arg, "component_event"):
-            raise exceptions.NonExistentEventException(
+            raise exceptions.NonExistentEventException(dedent(
                 """
                 Events have been removed.
                 Use the associated property instead.
                 """
-            )
+            ))
 
         if isinstance(arg.component_id, dict):
             validate_id_dict(arg)
@@ -62,13 +63,13 @@ def validate_callback_args(args, cls):
             validate_id_string(arg)
 
         else:
-            raise exceptions.IncorrectTypeException(
+            raise exceptions.IncorrectTypeException(dedent(
                 """
                 component_id must be a string or dict, found {!r}
                 """.format(
                     arg.component_id
                 )
-            )
+            ))
 
 
 def validate_id_dict(arg):
@@ -79,14 +80,14 @@ def validate_id_dict(arg):
         # non-string keys will be converted to strings in json.dumps and may
         # cause unwanted collisions
         if not isinstance(k, _strings):
-            raise exceptions.IncorrectTypeException(
+            raise exceptions.IncorrectTypeException(dedent(
                 """
                 Wildcard ID keys must be non-empty strings,
                 found {!r} in id {!r}
                 """.format(
                     k, arg_id
                 )
-            )
+            ))
 
 
 def validate_id_string(arg):
@@ -95,19 +96,19 @@ def validate_id_string(arg):
     invalid_chars = ".{"
     invalid_found = [x for x in invalid_chars if x in arg_id]
     if invalid_found:
-        raise exceptions.InvalidComponentIdError(
+        raise exceptions.InvalidComponentIdError(dedent(
             """
             The element `{}` contains `{}` in its ID.
             Characters `{}` are not allowed in IDs.
             """.format(
                 arg_id, "`, `".join(invalid_found), "`, `".join(invalid_chars)
             )
-        )
+        ))
 
 
 def validate_multi_return(outputs_list, output_value, callback_id):
     if not isinstance(output_value, (list, tuple)):
-        raise exceptions.InvalidCallbackReturnValue(
+        raise exceptions.InvalidCallbackReturnValue(dedent(
             """
             The callback {} is a multi-output.
             Expected the output type to be a list or tuple but got:
@@ -115,23 +116,23 @@ def validate_multi_return(outputs_list, output_value, callback_id):
             """.format(
                 callback_id, repr(output_value)
             )
-        )
+        ))
 
     if len(output_value) != len(outputs_list):
-        raise exceptions.InvalidCallbackReturnValue(
+        raise exceptions.InvalidCallbackReturnValue(dedent(
             """
             Invalid number of output values for {}.
             Expected {}, got {}
             """.format(
                 callback_id, len(outputs_list), len(output_value)
             )
-        )
+        ))
 
     for i, outi in enumerate(outputs_list):
         if isinstance(outi, list):
             vi = output_value[i]
             if not isinstance(vi, (list, tuple)):
-                raise exceptions.InvalidCallbackReturnValue(
+                raise exceptions.InvalidCallbackReturnValue(dedent(
                     """
                     The callback {} ouput {} is a wildcard multi-output.
                     Expected the output type to be a list or tuple but got:
@@ -140,10 +141,10 @@ def validate_multi_return(outputs_list, output_value, callback_id):
                     """.format(
                         callback_id, i, repr(vi), repr(outi)
                     )
-                )
+                ))
 
             if len(vi) != len(outi):
-                raise exceptions.InvalidCallbackReturnValue(
+                raise exceptions.InvalidCallbackReturnValue(dedent(
                     """
                     Invalid number of output values for {} item {}.
                     Expected {}, got {}
@@ -152,7 +153,7 @@ def validate_multi_return(outputs_list, output_value, callback_id):
                     """.format(
                         callback_id, i, len(vi), len(outi), repr(outi), repr(vi)
                     )
-                )
+                ))
 
 
 def fail_callback_output(output_value, output):
@@ -165,21 +166,25 @@ def fail_callback_output(output_value, output):
         )
         outer_type = type(outer_val).__name__
         if toplevel:
-            location = """
-            The value in question is either the only value returned,
-            or is in the top level of the returned list,
-            """
+            location = dedent(
+                """
+                The value in question is either the only value returned,
+                or is in the top level of the returned list,
+                """
+            )
         else:
             index_string = "[*]" if index is None else "[{:d}]".format(index)
-            location = """
-            The value in question is located at
-            {} {} {}
-            {},
-            """.format(
-                index_string, outer_type, outer_id, path
+            location = dedent(
+                """
+                The value in question is located at
+                {} {} {}
+                {},
+                """.format(
+                    index_string, outer_type, outer_id, path
+                )
             )
 
-        raise exceptions.InvalidCallbackReturnValue(
+        raise exceptions.InvalidCallbackReturnValue(dedent(
             """
             The callback for `{output}`
             returned a {object:s} having type `{type}`
@@ -199,7 +204,7 @@ def fail_callback_output(output_value, output):
                 location=location,
                 bad_val=bad_val,
             )
-        )
+        ))
 
     def _value_is_valid(val):
         return isinstance(val, valid)
@@ -253,7 +258,7 @@ def fail_callback_output(output_value, output):
         _validate_value(output_value)
 
     # if we got this far, raise a generic JSON error
-    raise exceptions.InvalidCallbackReturnValue(
+    raise exceptions.InvalidCallbackReturnValue(dedent(
         """
         The callback for property `{property:s}` of component `{id:s}`
         returned a value which is not JSON serializable.
@@ -263,27 +268,27 @@ def fail_callback_output(output_value, output):
         """.format(
             property=output.component_property, id=output.component_id
         )
-    )
+    ))
 
 
 def check_obsolete(kwargs):
     for key in kwargs:
         if key in ["components_cache_max_age", "static_folder"]:
-            raise exceptions.ObsoleteKwargException(
+            raise exceptions.ObsoleteKwargException(dedent(
                 """
                 {} is no longer a valid keyword argument in Dash since v1.0.
                 See https://dash.plotly.com for details.
                 """.format(
                     key
                 )
-            )
+            ))
         # any other kwarg mimic the built-in exception
         raise TypeError("Dash() got an unexpected keyword argument '" + key + "'")
 
 
 def validate_js_path(registered_paths, package_name, path_in_package_dist):
     if package_name not in registered_paths:
-        raise exceptions.DependencyException(
+        raise exceptions.DependencyException(dedent(
             """
             Error loading dependency. "{}" is not a registered library.
             Registered libraries are:
@@ -291,10 +296,10 @@ def validate_js_path(registered_paths, package_name, path_in_package_dist):
             """.format(
                 package_name, list(registered_paths.keys())
             )
-        )
+        ))
 
     if path_in_package_dist not in registered_paths[package_name]:
-        raise exceptions.DependencyException(
+        raise exceptions.DependencyException(dedent(
             """
             "{}" is registered but the path requested is not valid.
             The path requested: "{}"
@@ -302,37 +307,39 @@ def validate_js_path(registered_paths, package_name, path_in_package_dist):
             """.format(
                 package_name, path_in_package_dist, registered_paths
             )
-        )
+        ))
 
 
 def validate_index(name, checks, index):
     missing = [i for check, i in checks if not re.compile(check).search(index)]
     if missing:
         plural = "s" if len(missing) > 1 else ""
-        raise exceptions.InvalidIndexException(
+        raise exceptions.InvalidIndexException(dedent(
             "Missing item{pl} {items} in {name}.".format(
                 items=", ".join(missing), pl=plural, name=name
             )
-        )
+        ))
 
 
 def validate_layout_type(value):
     if not isinstance(value, (Component, patch_collections_abc("Callable"))):
-        raise exceptions.NoLayoutException(
-            "Layout must be a dash component "
-            "or a function that returns a dash component."
-        )
+        raise exceptions.NoLayoutException(dedent(
+            """
+            Layout must be a dash component
+            or a function that returns a dash component.
+            """
+        ))
 
 
 def validate_layout(layout, layout_value):
     if layout is None:
-        raise exceptions.NoLayoutException(
+        raise exceptions.NoLayoutException(dedent(
             """
             The layout was `None` at the time that `run_server` was called.
             Make sure to set the `layout` attribute of your application
             before running the server.
             """
-        )
+        ))
 
     layout_id = stringify_id(getattr(layout_value, "id", None))
 
@@ -340,11 +347,11 @@ def validate_layout(layout, layout_value):
     for component in layout_value._traverse():  # pylint: disable=protected-access
         component_id = stringify_id(getattr(component, "id", None))
         if component_id and component_id in component_ids:
-            raise exceptions.DuplicateIdError(
+            raise exceptions.DuplicateIdError(dedent(
                 """
                 Duplicate component id found in the initial layout: `{}`
                 """.format(
                     component_id
                 )
-            )
+            ))
         component_ids.add(component_id)
